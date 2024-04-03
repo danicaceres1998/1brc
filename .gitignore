@@ -1,0 +1,4 @@
+*.txt
+*.prof
+/bin/*
+!/bin/.keep
