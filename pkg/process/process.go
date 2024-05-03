@@ -2,33 +2,26 @@ package process
 
 import (
 	"fmt"
-	"go-1brc/pkg/csvreader"
 	"go-1brc/pkg/types"
 )
 
-const (
-	PoolSize = 60
-)
+const PoolSize = 75
 
 func StartRowsProcess(file string) (*types.StationManager, error) {
-	sm := types.NewStationManager(PoolSize)
-
-	lines, err := csvreader.ReadFile(file)
+	fo, err := types.NewFileObject(file)
 	if err != nil {
-		return sm, err
+		return nil, err
 	}
+	sm := types.NewStationManager(fo, PoolSize)
 
-	for chunkData := range lines {
-		sm.Queue(chunkData)
-	}
-
-	sm.Stop()
+	sm.ProcessFile()
+	sm.Wait()
 
 	return sm, nil
 }
 
 func PrintResults(sm *types.StationManager) {
-	print("{")
+	fmt.Print("{")
 	sm.Merge().Iter(func(_ uint64, v *types.Station) (stop bool) {
 		fmt.Printf(
 			"%s=%.1f/%.1f/%.1f, ",
@@ -39,5 +32,5 @@ func PrintResults(sm *types.StationManager) {
 		)
 		return false
 	})
-	print("}\n")
+	fmt.Print("}\n")
 }

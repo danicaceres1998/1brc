@@ -8,12 +8,12 @@ Upon reviewing the challenge's problem statement itself and also examining the c
 
 - ***Processing:*** My starting point was ensuring that my algorithm takes less than 30 seconds to complete the entire process.
 - ***Readability and maintainability:*** I aimed to make this code as readable and maintainable as possible, as I noticed in other examples that it was very difficult (or took a lot of effort) to understand what was happening underneath.
-- ***Utilizing all of Go's concurrency tools:*** goroutines, channels, etc.
-- Learning more about the ***unsafe*** package (*which resulted in a 35% improvement in my code*).
+- ***Utilizing all of Go's concurrency tools:*** goroutines, channels, wait groups,etc.
+- Learning more about the ***unsafe*** package (*v1: resulted in a 35% improvement in my code; v2: removed due to memory leaks and unexpected behavior*).
 - ***Writing Unit Tests:*** To validate each component of the application, I decided to develop under the TDD philosophy.
 
 ## Compiling
-`Go version: 1.22.1`
+`Go version: 1.22.2`
 
 For compile the code run:
 ``` bash
@@ -26,7 +26,7 @@ bin/1brc measurements.txt
 Obs: If you don't have the input data, clone the [1brc](https://github.com/gunnarmorling/1brc) repo and follow the guide to generate the file.
 
 ## Results
-Best result achieved on my notebook is `17.41s`. My machine is a *MacBook Pro 16' 2019* with:
+Best result achieved on my notebook is `13.58s`. My machine is a *MacBook Pro 16' 2019* with:
 - *Intel Core i7-9750H CPU @ 2.60GHz, six cores*
 - *16 GB 2400 MHz DDR4 RAM*
 - *SSD 256 GB*

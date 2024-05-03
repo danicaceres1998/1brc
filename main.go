@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-1brc/pkg/process"
+	"log"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -13,8 +14,7 @@ func main() {
 	start := time.Now()
 	stations, err := process.StartRowsProcess(os.Args[1])
 	if err != nil {
-		fmt.Printf("[ERROR]: Fatal error, error: %s", err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	process.PrintResults(stations)
 	fmt.Printf("[INFO]: Process finished in: %0.6fs\n", time.Since(start).Seconds())

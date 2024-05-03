@@ -28,10 +28,10 @@ func TestParseLines(t *testing.T) {
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
 			counter := 0
-			for result := range ParseLines(d.input) {
-				assert.Contains(t, d.expected, result)
+			ParseLines(d.input, func(sd StationData) {
+				assert.Contains(t, d.expected, sd)
 				counter++
-			}
+			})
 			assert.Equal(t, len(d.expected), counter)
 		})
 	}
@@ -54,40 +54,6 @@ func TestParceCSVLine(t *testing.T) {
 			assert.Equal(t, d.expected.Name, result.Name)
 			assert.Equal(t, d.expected.Temperature, result.Temperature)
 			assert.Equal(t, d.expected.HashId, result.HashId)
-		})
-	}
-}
-
-func TestReadBuffer(t *testing.T) {
-	data := []struct {
-		name     string
-		input    []byte
-		expected []StationData
-	}{
-		{
-			"success", []byte("Yaoundé;33.5\nWichita;18.0\nSana'a;17.7"),
-			[]StationData{
-				createStationData("Yaoundé", 335),
-				createStationData("Wichita", 180),
-				createStationData("Sana'a", 177),
-			},
-		},
-		{
-			"unparsable-bytes", []byte("Yaoundé;33.Sana'a;17.7"),
-			[]StationData{createStationData("Yaoundé", 370594201177)},
-		},
-	}
-
-	for _, d := range data {
-		t.Run(d.name, func(t *testing.T) {
-			i, out := 0, make(chan StationData, 5)
-			go readBuffer(d.input, out)
-
-			for result := range out {
-				assert.Contains(t, d.expected, result)
-				i++
-			}
-			assert.Equal(t, len(d.expected), i)
 		})
 	}
 }
