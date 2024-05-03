@@ -2,14 +2,45 @@ package types
 
 import (
 	"go-1brc/pkg/parser"
+	"os"
 	"sync"
-
-	"github.com/dolthub/swiss"
 )
 
-const (
-	MapSize = 1024
-)
+func NewFileObject(fileName string) (*FileObject, error) {
+	file, err := os.Open(fileName)
+	return &FileObject{
+		file:    file,
+		lock:    sync.Mutex{},
+		lockIdx: 0,
+	}, err
+}
+
+type FileObject struct {
+	file    *os.File
+	lock    sync.Mutex
+	lockIdx int
+}
+
+func (fo *FileObject) getIndex() int {
+	fo.lockIdx++
+	return fo.lockIdx
+}
+
+func (fo *FileObject) Read(buff []byte) (idx int, n int, err error) {
+	defer fo.lock.Unlock()
+
+	fo.lock.Lock()
+	idx = fo.getIndex()
+	n, err = fo.file.Read(buff)
+
+	return idx, n, err
+}
+
+type RemainingItem struct {
+	Idx     int
+	Content string
+	Initial bool
+}
 
 type Station struct {
 	Name  string
@@ -33,28 +64,4 @@ func (s *Station) Update(std parser.StationData) {
 
 func (s *Station) AvgTemperature() float64 {
 	return (float64(s.Sum) / 10) / float64(s.Count)
-}
-
-type Worker struct {
-	stations *swiss.Map[uint64, *Station]
-	in       chan []byte
-}
-
-func (w *Worker) consume(wg *sync.WaitGroup) {
-	for d := range w.in {
-		for std := range parser.ParseLines(d) {
-			if s, ok := w.stations.Get(std.HashId); ok {
-				s.Update(std)
-			} else {
-				w.stations.Put(std.HashId, &Station{
-					Name:  std.Name,
-					Min:   std.Temperature,
-					Max:   std.Temperature,
-					Sum:   std.Temperature,
-					Count: 1,
-				})
-			}
-		}
-	}
-	wg.Done()
 }

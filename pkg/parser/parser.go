@@ -1,19 +1,11 @@
 package parser
 
-import (
-	"unsafe"
-)
-
 const (
 	// Bytes to string
 	NewLine   = 10 // "\n"
 	Semicolon = 59 // ";"
 	Dot       = 46 // "."
 	Minus     = 45 // "-"
-	// Buffers size
-	SBufferSize = 1024
-	// Step Pointer
-	Step = 1
 )
 
 type StationData struct {
@@ -22,46 +14,33 @@ type StationData struct {
 	HashId      uint64
 }
 
-func ParseLines(buffer []byte) <-chan StationData {
-	out := make(chan StationData, SBufferSize)
-
-	go readBuffer(buffer, out)
-
-	return out
-}
-
-// Private Functions //
-
-func readBuffer(buffer []byte, out chan StationData) {
+func ParseLines(buffer []byte, updateWorker func(StationData)) {
 	walk, lastIdx := 0, len(buffer)-1
+
 	for i, v := range buffer {
 		if v == NewLine {
-			out <- parseCSVLine(buffer[getIndex(i-walk):i])
+			updateWorker(parseCSVLine(buffer[getIndex(i-walk):i]))
 			walk = 0
 		} else if i == lastIdx {
-			out <- parseCSVLine(buffer[getIndex(i-walk):])
+			updateWorker(parseCSVLine(buffer[getIndex(i-walk):]))
 			break
 		}
 		walk++
 	}
-
-	close(out)
 }
+
+// Private Functions //
 
 func parseCSVLine(line []byte) StationData {
 	std := StationData{}
-	pointer := unsafe.Pointer(&line[0])
 
-	for i := 0; i < len(line); i++ {
-		v := *(*byte)(pointer)
+	for i, v := range line {
 		if v == Semicolon {
 			std.HashId = hash(line[:i])
-			std.Name = unsafe.String(unsafe.SliceData(line[:i]), i)
+			std.Name = string(line[:i])
 			std.Temperature = bytesToInt(line[i+1:])
 			break
 		}
-
-		pointer = unsafe.Pointer(uintptr(pointer) + Step)
 	}
 
 	return std

@@ -1,7 +1,8 @@
 package types
 
 import (
-	"runtime"
+	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,18 +15,12 @@ const (
 )
 
 func TestSManagerCreateWorker(t *testing.T) {
-	sm, numWorkers := StationManager{}, 5
+	sm, numWorkers := StationManager{workersWg: &sync.WaitGroup{}}, 5
 	for range numWorkers {
-		sm.createWorker()
-	}
-	assert.Equal(t, (runtime.NumGoroutine() - StdGoRoutines), numWorkers)
-
-	for _, w := range sm.workers {
-		close(w.in)
+		sm.createWorker(&FileObject{})
 	}
 
-	sm.workersWg.Wait()
-	assert.Equal(t, runtime.NumGoroutine(), StdGoRoutines)
+	assert.Equal(t, numWorkers, len(sm.workers))
 }
 
 func TestSManagerMerge(t *testing.T) {
@@ -34,6 +29,7 @@ func TestSManagerMerge(t *testing.T) {
 			{stations: swiss.NewMap[uint64, *Station](2)},
 			{stations: swiss.NewMap[uint64, *Station](2)},
 		},
+		tWorker: newTrashWorker(),
 	}
 
 	stations := make(map[uint64]*Station)
@@ -53,36 +49,65 @@ func TestSManagerMerge(t *testing.T) {
 	assert.Equal(t, result.Count(), len(stations))
 }
 
-func TestSManagerStop(t *testing.T) {
-	sm := StationManager{managerQueue: make(chan []byte)}
+func TestSManagerWait(t *testing.T) {
+	sm := StationManager{
+		workersWg: &sync.WaitGroup{}, tWWg: &sync.WaitGroup{}, tWorker: newTrashWorker(),
+	}
 	sm.workersWg.Add(1)
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		sm.workersWg.Done()
 	}()
 
-	sm.Stop()
-	_, ok := <-sm.managerQueue
+	sm.Wait()
+
+	_, ok := <-sm.tWorker.in
 	assert.False(t, ok)
 }
 
 func TestNewStationManager(t *testing.T) {
-	sm := NewStationManager(2)
+	file, deleteFile := createTmpFile()
+	defer deleteFile()
 
-	sm.Queue([]byte("Yaoundé;33.5"))
-	sm.Queue([]byte("Yaoundé;-3.5"))
-	sm.Queue([]byte("Yaoundé;10.5"))
-	sm.Queue([]byte("Yaoundé;40.5"))
-	sm.Stop()
+	fo, err := NewFileObject(file.Name())
+	assert.Nil(t, err)
+
+	sm := NewStationManager(fo, 1)
+
+	sm.ProcessFile()
+	sm.Wait()
 
 	result := sm.Merge()
 	assert.Equal(t, 1, result.Count())
 	result.Iter(func(k uint64, v *Station) (stop bool) {
 		assert.Equal(t, "Yaoundé", v.Name)
-		assert.Equal(t, (335 + (-35) + 105 + 405), v.Sum)
+		assert.Equal(t, (335 + 105 + 405 + (-35)), v.Sum)
 		assert.Equal(t, 4, v.Count)
 		assert.Equal(t, -35, v.Min)
 		assert.Equal(t, 405, v.Max)
 		return false
 	})
+}
+
+// Auxiliary Functions //
+
+const fileContent = "Yaoundé;33.5\nYaoundé;10.5\nYaoundé;40.5\nYaoundé;-3.5\n"
+
+func createTmpFile() (*os.File, func()) {
+	file, err := os.CreateTemp("/var/tmp", "test-file-")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = file.WriteString(fileContent)
+	if err != nil {
+		panic(err)
+	}
+
+	return file, func() {
+		if file != nil {
+			file.Close()
+			os.Remove(file.Name())
+		}
+	}
 }
