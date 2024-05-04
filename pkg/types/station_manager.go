@@ -1,6 +1,7 @@
 package types
 
 import (
+	"go-1brc/pkg/parser"
 	"sync"
 
 	"github.com/dolthub/swiss"
@@ -47,9 +48,9 @@ func (sm *StationManager) Wait() {
 	sm.tWWg.Wait()
 }
 
-func (sm *StationManager) Merge() *swiss.Map[uint64, *Station] {
-	result := swiss.NewMap[uint64, *Station](ResultSize)
-	merge := func(k uint64, v *Station) (stop bool) {
+func (sm *StationManager) Merge() *swiss.Map[uint64, *parser.Station] {
+	result := swiss.NewMap[uint64, *parser.Station](ResultSize)
+	merge := func(k uint64, v *parser.Station) (stop bool) {
 		if s, ok := result.Get(k); ok {
 			if v.Min < s.Min {
 				s.Min = v.Min

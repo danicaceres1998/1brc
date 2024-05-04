@@ -5,76 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dolthub/swiss"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestUpdateStdData(t *testing.T) {
-	data := swiss.NewMap[uint64, *Station](5)
-	stationId := uint64(370594201177)
-	stData := []parser.StationData{
-		{Name: "Yaoundé", Temperature: 100, HashId: stationId},
-		{Name: "Yaoundé", Temperature: -100, HashId: stationId},
-	}
-
-	for _, std := range stData {
-		updateStationData(data, std)
-	}
-	station, ok := data.Get(stationId)
-	assert.True(t, ok)
-	assert.Equal(t, 100, station.Max)
-	assert.Equal(t, -100, station.Min)
-	assert.Equal(t, 2, station.Count)
-	assert.Equal(t, "Yaoundé", station.Name)
-}
-
-func TestWorkersUpdateStd(t *testing.T) {
-	type worker interface {
-		updateStd(parser.StationData)
-	}
-
-	stationId := uint64(370594201177)
-	stsData := []parser.StationData{
-		{Name: "Yaoundé", Temperature: 100, HashId: stationId},
-		{Name: "Yaoundé", Temperature: -100, HashId: stationId},
-	}
-
-	data := []struct {
-		name  string
-		w     worker
-		wType string
-	}{
-		{"worker", nil, "normal"},
-		{"trash-worker", nil, "trash"},
-	}
-
-	for _, d := range data {
-		t.Run(d.name, func(t *testing.T) {
-			stations := swiss.NewMap[uint64, *Station](5)
-			d.w = func() worker {
-				if d.wType == "normal" {
-					w := newWorker(&FileObject{})
-					w.stations = stations
-					return &w
-				}
-				w := newTrashWorker()
-				w.stations = stations
-				return &w
-			}()
-
-			for _, std := range stsData {
-				d.w.updateStd(std)
-			}
-
-			station, ok := stations.Get(stationId)
-			assert.True(t, ok)
-			assert.Equal(t, 100, station.Max)
-			assert.Equal(t, -100, station.Min)
-			assert.Equal(t, 2, station.Count)
-			assert.Equal(t, "Yaoundé", station.Name)
-		})
-	}
-}
 
 func TestWorkerConsume(t *testing.T) {
 	f, cleanTmp := createTmpFile()
@@ -143,7 +75,7 @@ func TestTrashWorkerConsume(t *testing.T) {
 	tWorker.consume(&wg)
 	wg.Wait()
 
-	tWorker.stations.Iter(func(k uint64, v *Station) (stop bool) {
+	tWorker.stations.Iter(func(k uint64, v *parser.Station) (stop bool) {
 		assert.Equal(t, "Yaoundé", v.Name)
 		assert.Equal(t, 105, v.Min)
 		assert.Equal(t, 105, v.Max)

@@ -26,7 +26,7 @@ bin/1brc measurements.txt
 Obs: If you don't have the input data, clone the [1brc](https://github.com/gunnarmorling/1brc) repo and follow the guide to generate the file.
 
 ## Results
-Best result achieved on my notebook is `13.58s`. My machine is a *MacBook Pro 16' 2019* with:
+Best result achieved on my notebook is `8.07s`. My machine is a *MacBook Pro 16' 2019* with:
 - *Intel Core i7-9750H CPU @ 2.60GHz, six cores*
 - *16 GB 2400 MHz DDR4 RAM*
 - *SSD 256 GB*

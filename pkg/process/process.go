@@ -2,6 +2,7 @@ package process
 
 import (
 	"fmt"
+	"go-1brc/pkg/parser"
 	"go-1brc/pkg/types"
 )
 
@@ -22,7 +23,7 @@ func StartRowsProcess(file string) (*types.StationManager, error) {
 
 func PrintResults(sm *types.StationManager) {
 	fmt.Print("{")
-	sm.Merge().Iter(func(_ uint64, v *types.Station) (stop bool) {
+	sm.Merge().Iter(func(_ uint64, v *parser.Station) (stop bool) {
 		fmt.Printf(
 			"%s=%.1f/%.1f/%.1f, ",
 			v.Name,

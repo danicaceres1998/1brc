@@ -1,5 +1,7 @@
 package parser
 
+import "github.com/dolthub/swiss"
+
 const (
 	// Bytes to string
 	NewLine   = 10 // "\n"
@@ -8,21 +10,39 @@ const (
 	Minus     = 45 // "-"
 )
 
-type StationData struct {
-	Name        string
-	Temperature int
-	HashId      uint64
+type Station struct {
+	Name  string
+	Min   int
+	Max   int
+	Sum   int
+	Count int
 }
 
-func ParseLines(buffer []byte, updateWorker func(StationData)) {
+func (s *Station) Update(tmp int) {
+	if s.Min > tmp {
+		s.Min = tmp
+	}
+	if s.Max < tmp {
+		s.Max = tmp
+	}
+
+	s.Sum += tmp
+	s.Count++
+}
+
+func (s *Station) AvgTemperature() float64 {
+	return (float64(s.Sum) / 10) / float64(s.Count)
+}
+
+func ParseLines(buffer []byte, data *swiss.Map[uint64, *Station]) {
 	walk, lastIdx := 0, len(buffer)-1
 
 	for i, v := range buffer {
 		if v == NewLine {
-			updateWorker(parseCSVLine(buffer[getIndex(i-walk):i]))
+			processCSVLine(buffer[getIndex(i-walk):i], data)
 			walk = 0
 		} else if i == lastIdx {
-			updateWorker(parseCSVLine(buffer[getIndex(i-walk):]))
+			processCSVLine(buffer[getIndex(i-walk):], data)
 			break
 		}
 		walk++
@@ -31,19 +51,25 @@ func ParseLines(buffer []byte, updateWorker func(StationData)) {
 
 // Private Functions //
 
-func parseCSVLine(line []byte) StationData {
-	std := StationData{}
-
+func processCSVLine(line []byte, data *swiss.Map[uint64, *Station]) {
 	for i, v := range line {
 		if v == Semicolon {
-			std.HashId = hash(line[:i])
-			std.Name = string(line[:i])
-			std.Temperature = bytesToInt(line[i+1:])
+			hashId := hash(line[:i])
+			tmp := bytesToInt(line[i+1:])
+			if s, ok := data.Get(hashId); ok {
+				s.Update(tmp)
+			} else {
+				data.Put(hashId, &Station{
+					Name:  string(line[:i]),
+					Min:   tmp,
+					Max:   tmp,
+					Sum:   tmp,
+					Count: 1,
+				})
+			}
 			break
 		}
 	}
-
-	return std
 }
 
 func getIndex(i int) int {

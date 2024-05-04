@@ -1,7 +1,6 @@
 package types
 
 import (
-	"go-1brc/pkg/parser"
 	"os"
 	"sync"
 )
@@ -40,28 +39,4 @@ type RemainingItem struct {
 	Idx     int
 	Content string
 	Initial bool
-}
-
-type Station struct {
-	Name  string
-	Min   int
-	Max   int
-	Sum   int
-	Count int
-}
-
-func (s *Station) Update(std parser.StationData) {
-	if s.Min > std.Temperature {
-		s.Min = std.Temperature
-	}
-	if s.Max < std.Temperature {
-		s.Max = std.Temperature
-	}
-
-	s.Sum += std.Temperature
-	s.Count++
-}
-
-func (s *Station) AvgTemperature() float64 {
-	return (float64(s.Sum) / 10) / float64(s.Count)
 }

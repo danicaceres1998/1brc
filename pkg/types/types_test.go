@@ -1,7 +1,6 @@
 package types
 
 import (
-	"go-1brc/pkg/parser"
 	"io"
 	"os"
 	"sort"
@@ -9,28 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestStatioUpdate(t *testing.T) {
-	s := Station{}
-	s.Update(parser.StationData{
-		Temperature: 10,
-	})
-	assert.Equal(t, 10, s.Max)
-	assert.Equal(t, 0, s.Min)
-	assert.Equal(t, 10, s.Sum)
-	assert.Equal(t, 1, s.Count)
-
-	s.Update(parser.StationData{
-		Temperature: -1,
-	})
-	assert.Equal(t, -1, s.Min)
-	assert.Equal(t, 2, s.Count)
-}
-
-func TestStationAvgTemp(t *testing.T) {
-	s := Station{Sum: 100, Count: 2}
-	assert.Equal(t, s.AvgTemperature(), 5.0)
-}
 
 func TestNewFileObject(t *testing.T) {
 	data := []struct {

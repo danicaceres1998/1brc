@@ -1,6 +1,7 @@
 package types
 
 import (
+	"go-1brc/pkg/parser"
 	"os"
 	"sync"
 	"testing"
@@ -26,15 +27,15 @@ func TestSManagerCreateWorker(t *testing.T) {
 func TestSManagerMerge(t *testing.T) {
 	sm := StationManager{
 		workers: []Worker{
-			{stations: swiss.NewMap[uint64, *Station](2)},
-			{stations: swiss.NewMap[uint64, *Station](2)},
+			{stations: swiss.NewMap[uint64, *parser.Station](2)},
+			{stations: swiss.NewMap[uint64, *parser.Station](2)},
 		},
 		tWorker: newTrashWorker(),
 	}
 
-	stations := make(map[uint64]*Station)
-	stations[7571807575422721] = &Station{Name: "Yaoundé", Min: 100, Max: 100, Count: 1, Sum: 100}
-	stations[6952756473232] = &Station{Name: "Sana'a", Min: 200, Max: 200, Count: 1, Sum: 200}
+	stations := make(map[uint64]*parser.Station)
+	stations[7571807575422721] = &parser.Station{Name: "Yaoundé", Min: 100, Max: 100, Count: 1, Sum: 100}
+	stations[6952756473232] = &parser.Station{Name: "Sana'a", Min: 200, Max: 200, Count: 1, Sum: 200}
 	for _, w := range sm.workers {
 		for k, s := range stations {
 			w.stations.Put(k, s)
@@ -42,7 +43,7 @@ func TestSManagerMerge(t *testing.T) {
 	}
 
 	result := sm.Merge()
-	result.Iter(func(k uint64, v *Station) (stop bool) {
+	result.Iter(func(k uint64, v *parser.Station) (stop bool) {
 		assert.Equal(t, v, stations[k])
 		return false
 	})
@@ -79,7 +80,7 @@ func TestNewStationManager(t *testing.T) {
 
 	result := sm.Merge()
 	assert.Equal(t, 1, result.Count())
-	result.Iter(func(k uint64, v *Station) (stop bool) {
+	result.Iter(func(k uint64, v *parser.Station) (stop bool) {
 		assert.Equal(t, "Yaoundé", v.Name)
 		assert.Equal(t, (335 + 105 + 405 + (-35)), v.Sum)
 		assert.Equal(t, 4, v.Count)

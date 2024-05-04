@@ -14,34 +14,16 @@ const (
 	MapSize        = 1024
 )
 
-func updateStationData(data *swiss.Map[uint64, *Station], std parser.StationData) {
-	if s, ok := data.Get(std.HashId); ok {
-		s.Update(std)
-	} else {
-		data.Put(std.HashId, &Station{
-			Name:  std.Name,
-			Min:   std.Temperature,
-			Max:   std.Temperature,
-			Sum:   std.Temperature,
-			Count: 1,
-		})
-	}
-}
-
 func newWorker(fo *FileObject) Worker {
 	return Worker{
 		file:     fo,
-		stations: swiss.NewMap[uint64, *Station](MapSize),
+		stations: swiss.NewMap[uint64, *parser.Station](MapSize),
 	}
 }
 
 type Worker struct {
 	file     *FileObject
-	stations *swiss.Map[uint64, *Station]
-}
-
-func (w *Worker) updateStd(std parser.StationData) {
-	updateStationData(w.stations, std)
+	stations *swiss.Map[uint64, *parser.Station]
 }
 
 func (w *Worker) consume(wg *sync.WaitGroup, trash chan *RemainingItem) {
@@ -75,7 +57,7 @@ func (w *Worker) consume(wg *sync.WaitGroup, trash chan *RemainingItem) {
 		}
 		trash <- &RemainingItem{idx, string(readBuffer[final:n]), true}
 
-		parser.ParseLines(readBuffer[start:final], w.updateStd)
+		parser.ParseLines(readBuffer[start:final], w.stations)
 	}
 
 	wg.Done()
@@ -83,18 +65,14 @@ func (w *Worker) consume(wg *sync.WaitGroup, trash chan *RemainingItem) {
 
 func newTrashWorker() TrashWorker {
 	return TrashWorker{
-		stations: swiss.NewMap[uint64, *Station](1024),
+		stations: swiss.NewMap[uint64, *parser.Station](1024),
 		in:       make(chan *RemainingItem, 70*2),
 	}
 }
 
 type TrashWorker struct {
-	stations *swiss.Map[uint64, *Station]
+	stations *swiss.Map[uint64, *parser.Station]
 	in       chan *RemainingItem
-}
-
-func (w *TrashWorker) updateStd(std parser.StationData) {
-	updateStationData(w.stations, std)
 }
 
 func (rw *TrashWorker) consume(wg *sync.WaitGroup) {
@@ -105,7 +83,7 @@ func (rw *TrashWorker) consume(wg *sync.WaitGroup) {
 		if item.Idx == 0 {
 			total := len(item.Content)
 			copy(buffer[:total], item.Content)
-			parser.ParseLines(buffer[:total], rw.updateStd)
+			parser.ParseLines(buffer[:total], rw.stations)
 			continue
 		}
 
@@ -128,5 +106,5 @@ func (rw *TrashWorker) saveCan(buff []byte, ref, oth *RemainingItem) {
 	}
 	total := len(ref.Content) + len(oth.Content)
 
-	parser.ParseLines(buff[:total], rw.updateStd)
+	parser.ParseLines(buff[:total], rw.stations)
 }
