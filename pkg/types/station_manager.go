@@ -14,11 +14,11 @@ const (
 func NewStationManager(fo *FileObject, size int) *StationManager {
 	sm := &StationManager{
 		workers:   make([]Worker, 0, size),
-		tWorker:   newTrashWorker(),
 		workersWg: &sync.WaitGroup{},
 		tWWg:      &sync.WaitGroup{},
 	}
 
+	sm.createTrashWorker(size)
 	for range size {
 		sm.createWorker(fo)
 	}
@@ -34,18 +34,13 @@ type StationManager struct {
 }
 
 func (sm *StationManager) ProcessFile() {
-	sm.tWWg.Add(1)
 	go sm.tWorker.consume(sm.tWWg)
 
 	for _, w := range sm.workers {
 		go w.consume(sm.workersWg, sm.tWorker.in)
 	}
-}
 
-func (sm *StationManager) Wait() {
-	sm.workersWg.Wait()
-	close(sm.tWorker.in)
-	sm.tWWg.Wait()
+	sm.wait()
 }
 
 func (sm *StationManager) Merge() *swiss.Map[uint64, *parser.Station] {
@@ -74,8 +69,19 @@ func (sm *StationManager) Merge() *swiss.Map[uint64, *parser.Station] {
 	return result
 }
 
+func (sm *StationManager) wait() {
+	sm.workersWg.Wait()
+	close(sm.tWorker.in)
+	sm.tWWg.Wait()
+}
+
 func (sm *StationManager) createWorker(fo *FileObject) {
 	w := newWorker(fo)
 	sm.workersWg.Add(1)
 	sm.workers = append(sm.workers, w)
+}
+
+func (sm *StationManager) createTrashWorker(size int) {
+	sm.tWWg.Add(1)
+	sm.tWorker = newTrashWorker(size)
 }

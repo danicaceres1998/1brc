@@ -30,7 +30,7 @@ func TestSManagerMerge(t *testing.T) {
 			{stations: swiss.NewMap[uint64, *parser.Station](2)},
 			{stations: swiss.NewMap[uint64, *parser.Station](2)},
 		},
-		tWorker: newTrashWorker(),
+		tWorker: newTrashWorker(1),
 	}
 
 	stations := make(map[uint64]*parser.Station)
@@ -52,7 +52,7 @@ func TestSManagerMerge(t *testing.T) {
 
 func TestSManagerWait(t *testing.T) {
 	sm := StationManager{
-		workersWg: &sync.WaitGroup{}, tWWg: &sync.WaitGroup{}, tWorker: newTrashWorker(),
+		workersWg: &sync.WaitGroup{}, tWWg: &sync.WaitGroup{}, tWorker: newTrashWorker(1),
 	}
 	sm.workersWg.Add(1)
 	go func() {
@@ -60,7 +60,7 @@ func TestSManagerWait(t *testing.T) {
 		sm.workersWg.Done()
 	}()
 
-	sm.Wait()
+	sm.wait()
 
 	_, ok := <-sm.tWorker.in
 	assert.False(t, ok)
@@ -76,7 +76,6 @@ func TestNewStationManager(t *testing.T) {
 	sm := NewStationManager(fo, 1)
 
 	sm.ProcessFile()
-	sm.Wait()
 
 	result := sm.Merge()
 	assert.Equal(t, 1, result.Count())

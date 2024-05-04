@@ -13,10 +13,9 @@ func StartRowsProcess(file string) (*types.StationManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	sm := types.NewStationManager(fo, PoolSize)
 
+	sm := types.NewStationManager(fo, PoolSize)
 	sm.ProcessFile()
-	sm.Wait()
 
 	return sm, nil
 }

@@ -63,10 +63,10 @@ func (w *Worker) consume(wg *sync.WaitGroup, trash chan *RemainingItem) {
 	wg.Done()
 }
 
-func newTrashWorker() TrashWorker {
+func newTrashWorker(size int) TrashWorker {
 	return TrashWorker{
 		stations: swiss.NewMap[uint64, *parser.Station](1024),
-		in:       make(chan *RemainingItem, 70*2),
+		in:       make(chan *RemainingItem, size*2),
 	}
 }
 

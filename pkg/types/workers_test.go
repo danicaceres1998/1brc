@@ -57,7 +57,7 @@ func TestWorkerConsume(t *testing.T) {
 }
 
 func TestTrashWorkerConsume(t *testing.T) {
-	tWorker := newTrashWorker()
+	tWorker := newTrashWorker(2)
 	// Trash sender
 	go func() {
 		data := "Yaoundé;10.5\n"
@@ -106,7 +106,7 @@ func TestTrashWorkerSaveCan(t *testing.T) {
 	buff := make([]byte, 1024)
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
-			tWorker := newTrashWorker()
+			tWorker := newTrashWorker(2)
 			tWorker.saveCan(buff, d.ref, d.oth)
 
 			s, ok := tWorker.stations.Get(7571807575422721)
